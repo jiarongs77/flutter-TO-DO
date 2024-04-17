@@ -1,6 +1,6 @@
-# test_drive
+# flutter TO-D0
 
-A new Flutter project.
+A new Flutter project. Client side for the TO-DO List full stack project
 
 ## Getting Started
 
