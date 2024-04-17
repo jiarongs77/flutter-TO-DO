@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 void main() => runApp(MyApp());
 
@@ -19,25 +21,55 @@ class TodoScreen extends StatefulWidget {
 
 class _TodoScreenState extends State<TodoScreen> {
   final List<Task> _tasks = [];
+  final TextEditingController _controller = TextEditingController();
 
-  void _addTask(String title) {
+  void _addTask(String title) async {
     if (title.isNotEmpty) {
+      var response = await http.post(
+        Uri.parse('http://localhost:8000/items/'),
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(<String, dynamic>{
+          'title': title,
+          'is_done': false,
+        }),
+      );
+      if (response.statusCode == 200) {
+        var responseBody = jsonDecode(response.body);
+        setState(() {
+          _tasks.add(Task(id: responseBody['item_id'], title: title));
+        });
+      }
+    }
+  }
+
+  void _toggleDone(int id) async {
+    var task = _tasks.firstWhere((t) => t.id == id);
+    var response = await http.put(
+      Uri.parse('http://localhost:8000/items/$id'),
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(<String, dynamic>{
+        'title': task.title,
+        'is_done': !task.isDone,
+      }),
+    );
+    if (response.statusCode == 200) {
       setState(() {
-        _tasks.add(Task(title: title));
+        task.isDone = !task.isDone;
       });
     }
   }
 
-  void _toggleDone(int index) {
-    setState(() {
-      _tasks[index].isDone = !_tasks[index].isDone;
-    });
-  }
-
-  void _removeTask(int index) {
-    setState(() {
-      _tasks.removeAt(index);
-    });
+  void _removeTask(int id) async {
+    var response = await http.delete(Uri.parse('http://localhost:8000/items/$id'));
+    if (response.statusCode == 200) {
+      setState(() {
+        _tasks.removeWhere((t) => t.id == id);
+      });
+    }
   }
 
   @override
@@ -52,18 +84,19 @@ class _TodoScreenState extends State<TodoScreen> {
             child: ListView.builder(
               itemCount: _tasks.length,
               itemBuilder: (context, index) {
+                var task = _tasks[index];
                 return ListTile(
                   title: Text(
-                    _tasks[index].title,
+                    task.title,
                     style: TextStyle(
-                      decoration: _tasks[index].isDone ? TextDecoration.lineThrough : null,
+                      decoration: task.isDone ? TextDecoration.lineThrough : null,
                     ),
                   ),
                   trailing: IconButton(
                     icon: Icon(Icons.delete),
-                    onPressed: () => _removeTask(index),
+                    onPressed: () => _removeTask(task.id),
                   ),
-                  onTap: () => _toggleDone(index),
+                  onTap: () => _toggleDone(task.id),
                 );
               },
             ),
@@ -71,7 +104,11 @@ class _TodoScreenState extends State<TodoScreen> {
           Padding(
             padding: EdgeInsets.all(16.0),
             child: TextField(
-              onSubmitted: _addTask,
+              controller: _controller,
+              onSubmitted: (value) {
+                _addTask(value);
+                _controller.clear();
+              },
               decoration: InputDecoration(
                 labelText: 'Add a Task',
                 border: OutlineInputBorder(),
@@ -85,137 +122,9 @@ class _TodoScreenState extends State<TodoScreen> {
 }
 
 class Task {
+  int id;
   String title;
   bool isDone;
 
-  Task({required this.title, this.isDone = false});
+  Task({required this.id, required this.title, this.isDone = false});
 }
-
-
-// original code
-
-// import 'package:flutter/material.dart';
-
-// void main() {
-//   runApp(const MyApp());
-// }
-
-// class MyApp extends StatelessWidget {
-//   const MyApp({super.key});
-
-//   // This widget is the root of your application.
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       title: 'Flutter Demo',
-//       theme: ThemeData(
-//         // This is the theme of your application.
-//         //
-//         // TRY THIS: Try running your application with "flutter run". You'll see
-//         // the application has a purple toolbar. Then, without quitting the app,
-//         // try changing the seedColor in the colorScheme below to Colors.green
-//         // and then invoke "hot reload" (save your changes or press the "hot
-//         // reload" button in a Flutter-supported IDE, or press "r" if you used
-//         // the command line to start the app).
-//         //
-//         // Notice that the counter didn't reset back to zero; the application
-//         // state is not lost during the reload. To reset the state, use hot
-//         // restart instead.
-//         //
-//         // This works for code too, not just values: Most code changes can be
-//         // tested with just a hot reload.
-//         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-//         useMaterial3: true,
-//       ),
-//       home: const MyHomePage(title: 'Flutter Demo Home Page'),
-//     );
-//   }
-// }
-
-// class MyHomePage extends StatefulWidget {
-//   const MyHomePage({super.key, required this.title});
-
-//   // This widget is the home page of your application. It is stateful, meaning
-//   // that it has a State object (defined below) that contains fields that affect
-//   // how it looks.
-
-//   // This class is the configuration for the state. It holds the values (in this
-//   // case the title) provided by the parent (in this case the App widget) and
-//   // used by the build method of the State. Fields in a Widget subclass are
-//   // always marked "final".
-
-//   final String title;
-
-//   @override
-//   State<MyHomePage> createState() => _MyHomePageState();
-// }
-
-// class _MyHomePageState extends State<MyHomePage> {
-//   int _counter = 0;
-
-//   void _incrementCounter() {
-//     setState(() {
-//       // This call to setState tells the Flutter framework that something has
-//       // changed in this State, which causes it to rerun the build method below
-//       // so that the display can reflect the updated values. If we changed
-//       // _counter without calling setState(), then the build method would not be
-//       // called again, and so nothing would appear to happen.
-//       _counter++;
-//     });
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     // This method is rerun every time setState is called, for instance as done
-//     // by the _incrementCounter method above.
-//     //
-//     // The Flutter framework has been optimized to make rerunning build methods
-//     // fast, so that you can just rebuild anything that needs updating rather
-//     // than having to individually change instances of widgets.
-//     return Scaffold(
-//       appBar: AppBar(
-//         // TRY THIS: Try changing the color here to a specific color (to
-//         // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-//         // change color while the other colors stay the same.
-//         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-//         // Here we take the value from the MyHomePage object that was created by
-//         // the App.build method, and use it to set our appbar title.
-//         title: Text(widget.title),
-//       ),
-//       body: Center(
-//         // Center is a layout widget. It takes a single child and positions it
-//         // in the middle of the parent.
-//         child: Column(
-//           // Column is also a layout widget. It takes a list of children and
-//           // arranges them vertically. By default, it sizes itself to fit its
-//           // children horizontally, and tries to be as tall as its parent.
-//           //
-//           // Column has various properties to control how it sizes itself and
-//           // how it positions its children. Here we use mainAxisAlignment to
-//           // center the children vertically; the main axis here is the vertical
-//           // axis because Columns are vertical (the cross axis would be
-//           // horizontal).
-//           //
-//           // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-//           // action in the IDE, or press "p" in the console), to see the
-//           // wireframe for each widget.
-//           mainAxisAlignment: MainAxisAlignment.center,
-//           children: <Widget>[
-//             const Text(
-//               'You have clicked the button this many times:',
-//             ),
-//             Text(
-//               '$_counter',
-//               style: Theme.of(context).textTheme.headlineMedium,
-//             ),
-//           ],
-//         ),
-//       ),
-//       floatingActionButton: FloatingActionButton(
-//         onPressed: _incrementCounter,
-//         tooltip: 'Increment',
-//         child: const Icon(Icons.add),
-//       ), // This trailing comma makes auto-formatting nicer for build methods.
-//     );
-//   }
-// }
