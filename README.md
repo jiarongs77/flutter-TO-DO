@@ -1,6 +1,6 @@
 # flutter TO-D0
 
-A new Flutter project. Client side for the TO-DO List full stack project
+Client side for the user CRUD service.
 
 ## Getting Started
 
