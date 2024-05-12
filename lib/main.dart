@@ -72,6 +72,19 @@ class _TodoScreenState extends State<TodoScreen> {
     }
   }
 
+  void _showMenuSelection(String value) {
+    switch (value) {
+      case 'Register':
+        _showRegisterDialog();
+        break;
+      case 'Login':
+        _showLoginDialog();  // This function now prompts for user credentials
+        break;
+      default:
+        print('Unknown option: $value');
+    }
+  }
+
   Future<void> _registerUser(String email, String password, String fullName) async {
     var url = Uri.parse('http://127.0.0.1:8000/api/v1/users/register');
     var response = await http.post(
@@ -95,63 +108,151 @@ class _TodoScreenState extends State<TodoScreen> {
     }
   }
 
-void _showRegisterDialog() {
+Future<void> _loginUser(String email, String password) async {
+  var url = Uri.parse('http://127.0.0.1:8000/api/v1/login/access-token');
+  var response = await http.post(
+    url,
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: 'username=${Uri.encodeComponent(email)}&password=${Uri.encodeComponent(password)}&grant_type=password'
+  );
+
+  if (response.statusCode == 200) {
+    var responseBody = jsonDecode(response.body);
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Login Successful"),
+          content: Text("Welcome back!"),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+    print('Access Token: ${responseBody['access_token']}');
+  } else {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Login Failed"),
+          content: Text("Incorrect email or password."),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+void _showDialog({
+  required String title,
+  required List<TextField> fields,
+  required VoidCallback onConfirm,
+}) {
   showDialog(
     context: context,
     builder: (BuildContext context) {
-      final emailController = TextEditingController();
-      final passwordController = TextEditingController();
-      final fullNameController = TextEditingController();
-
       return AlertDialog(
-        titlePadding: EdgeInsets.all(0), // Remove padding around the title AppBar
+        titlePadding: EdgeInsets.all(0),
         title: AppBar(
-          backgroundColor: Theme.of(context).dialogBackgroundColor, // Match dialog background color
-          automaticallyImplyLeading: false,  // No default back arrow
-          title: Text('Register'),
+          backgroundColor: Theme.of(context).dialogBackgroundColor,
+          automaticallyImplyLeading: false,
+          title: Text(title),
           actions: <Widget>[
             IconButton(
-              icon: Icon(Icons.close, color: Colors.black),  // 'X' icon, adjust color as needed
-              onPressed: () => Navigator.of(context).pop(),  // Close the dialog
+              icon: Icon(Icons.close, color: Colors.black),
+              onPressed: () => Navigator.of(context).pop(),
             ),
           ],
-          elevation: 0,  // Removes shadow
+          elevation: 0,
         ),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              TextField(
-                controller: emailController,
-                decoration: InputDecoration(labelText: 'Email'),
-              ),
-              TextField(
-                controller: passwordController,
-                decoration: InputDecoration(labelText: 'Password'),
-                obscureText: true,
-              ),
-              TextField(
-                controller: fullNameController,
-                decoration: InputDecoration(labelText: 'Full Name'),
-              ),
-            ],
+            children: fields,
           ),
         ),
         actions: <Widget>[
           TextButton(
             onPressed: () {
+              onConfirm();
               Navigator.of(context).pop();
-              _registerUser(
-                emailController.text,
-                passwordController.text,
-                fullNameController.text,
-              );
             },
-            child: Text('Register'),
+            child: Text(title),
           ),
         ],
       );
     },
+  );
+}
+
+void _showRegisterDialog() {
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+  final fullNameController = TextEditingController();
+
+  _showDialog(
+    title: 'Register',
+    fields: [
+      TextField(
+        controller: emailController,
+        decoration: InputDecoration(labelText: 'Email'),
+      ),
+      TextField(
+        controller: passwordController,
+        decoration: InputDecoration(labelText: 'Password'),
+        obscureText: true,
+      ),
+      TextField(
+        controller: fullNameController,
+        decoration: InputDecoration(labelText: 'Full Name'),
+      ),
+    ],
+    onConfirm: () => _registerUser(
+      emailController.text,
+      passwordController.text,
+      fullNameController.text,
+    ),
+  );
+}
+
+void _showLoginDialog() {
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+
+  _showDialog(
+    title: 'Login',
+    fields: [
+      TextField(
+        controller: emailController,
+        decoration: InputDecoration(labelText: 'Email'),
+        keyboardType: TextInputType.emailAddress,
+      ),
+      TextField(
+        controller: passwordController,
+        decoration: InputDecoration(labelText: 'Password'),
+        obscureText: true,
+      ),
+    ],
+    onConfirm: () => _loginUser(
+      emailController.text,
+      passwordController.text,
+    ),
   );
 }
 
@@ -161,49 +262,23 @@ void _showRegisterDialog() {
     return Scaffold(
       appBar: AppBar(
         title: Text('TODO List'),
-        leading: IconButton(
-          icon: Icon(Icons.person_add), // Icon for registration
-          onPressed: _showRegisterDialog, // Function to show the registration dialog
+        leading: PopupMenuButton<String>(
+          onSelected: _showMenuSelection,
+          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+            const PopupMenuItem<String>(
+              value: 'Register',
+              child: Text('Register'),
+            ),
+            const PopupMenuItem<String>(
+              value: 'Login',
+              child: Text('Login'),
+            ),
+          ],
+          icon: Icon(Icons.person),
         ),
       ),
       body: Column(
-        children: <Widget>[
-          Expanded(
-            child: ListView.builder(
-              itemCount: _tasks.length,
-              itemBuilder: (context, index) {
-                var task = _tasks[index];
-                return ListTile(
-                  title: Text(
-                    task.title,
-                    style: TextStyle(
-                      decoration: task.isDone ? TextDecoration.lineThrough : null,
-                    ),
-                  ),
-                  trailing: IconButton(
-                    icon: Icon(Icons.delete),
-                    onPressed: () => _removeTask(task.id),
-                  ),
-                  onTap: () => _toggleDone(task.id),
-                );
-              },
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _controller,
-              onSubmitted: (value) {
-                _addTask(value);
-                _controller.clear();
-              },
-              decoration: InputDecoration(
-                labelText: 'Add a Task',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ),
-        ],
+        // Existing body widgets
       ),
     );
   }
