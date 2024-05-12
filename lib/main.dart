@@ -72,11 +72,99 @@ class _TodoScreenState extends State<TodoScreen> {
     }
   }
 
+  Future<void> _registerUser(String email, String password, String fullName) async {
+    var url = Uri.parse('http://127.0.0.1:8000/api/v1/users/register');
+    var response = await http.post(
+      url,
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode(<String, String>{
+        'email': email,
+        'password': password,
+        'full_name': fullName,
+      }),
+    );
+    if (response.statusCode == 200) {
+      print('User registered successfully');
+      // Optionally navigate or provide feedback
+    } else {
+      print('Failed to register user: ${response.body}');
+      // Optionally handle errors or provide feedback
+    }
+  }
+
+void _showRegisterDialog() {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      final emailController = TextEditingController();
+      final passwordController = TextEditingController();
+      final fullNameController = TextEditingController();
+
+      return AlertDialog(
+        titlePadding: EdgeInsets.all(0), // Remove padding around the title AppBar
+        title: AppBar(
+          backgroundColor: Theme.of(context).dialogBackgroundColor, // Match dialog background color
+          automaticallyImplyLeading: false,  // No default back arrow
+          title: Text('Register'),
+          actions: <Widget>[
+            IconButton(
+              icon: Icon(Icons.close, color: Colors.black),  // 'X' icon, adjust color as needed
+              onPressed: () => Navigator.of(context).pop(),  // Close the dialog
+            ),
+          ],
+          elevation: 0,  // Removes shadow
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              TextField(
+                controller: emailController,
+                decoration: InputDecoration(labelText: 'Email'),
+              ),
+              TextField(
+                controller: passwordController,
+                decoration: InputDecoration(labelText: 'Password'),
+                obscureText: true,
+              ),
+              TextField(
+                controller: fullNameController,
+                decoration: InputDecoration(labelText: 'Full Name'),
+              ),
+            ],
+          ),
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _registerUser(
+                emailController.text,
+                passwordController.text,
+                fullNameController.text,
+              );
+            },
+            child: Text('Register'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('TODO List'),
+        leading: IconButton(
+          icon: Icon(Icons.person_add), // Icon for registration
+          onPressed: _showRegisterDialog, // Function to show the registration dialog
+        ),
       ),
       body: Column(
         children: <Widget>[
