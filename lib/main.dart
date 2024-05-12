@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
@@ -22,6 +24,26 @@ class TodoScreen extends StatefulWidget {
 class _TodoScreenState extends State<TodoScreen> {
   final List<Task> _tasks = [];
   final TextEditingController _controller = TextEditingController();
+
+  bool _isLoggedIn = false;
+  String _accessToken = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreLoginStatus();
+  }
+
+  Future<void> _restoreLoginStatus() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? accessToken = prefs.getString('accessToken');
+    if (accessToken != null) {
+      setState(() {
+        _accessToken = accessToken;
+        _isLoggedIn = true;
+      });
+    }
+  }
 
   void _addTask(String title) async {
     if (title.isNotEmpty) {
@@ -72,18 +94,25 @@ class _TodoScreenState extends State<TodoScreen> {
     }
   }
 
-  void _showMenuSelection(String value) {
-    switch (value) {
-      case 'Register':
+void _showMenuSelection(String value) {
+  switch (value) {
+    case 'Register':
+      if (!_isLoggedIn) {
         _showRegisterDialog();
-        break;
-      case 'Login':
-        _showLoginDialog();  // This function now prompts for user credentials
-        break;
-      default:
-        print('Unknown option: $value');
-    }
+      }
+      break;
+    case 'Login':
+      if (!_isLoggedIn) {
+        _showLoginDialog();
+      }
+      break;
+    case 'Logout':
+      _logout();
+      break;
+    default:
+      print('Unknown option: $value');
   }
+}
 
   Future<void> _registerUser(String email, String password, String fullName) async {
     var url = Uri.parse('http://127.0.0.1:8000/api/v1/users/register');
@@ -120,6 +149,12 @@ Future<void> _loginUser(String email, String password) async {
 
   if (response.statusCode == 200) {
     var responseBody = jsonDecode(response.body);
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('accessToken', responseBody['access_token']);
+    setState(() {
+      _accessToken = responseBody['access_token'];
+      _isLoggedIn = true;
+    });
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -128,16 +163,12 @@ Future<void> _loginUser(String email, String password) async {
           content: Text("Welcome back!"),
           actions: <Widget>[
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+              onPressed: () => Navigator.of(context).pop(),
               child: Text('OK'),
             ),
           ],
         );
-      },
-    );
-    print('Access Token: ${responseBody['access_token']}');
+    });
   } else {
     showDialog(
       context: context,
@@ -147,9 +178,7 @@ Future<void> _loginUser(String email, String password) async {
           content: Text("Incorrect email or password."),
           actions: <Widget>[
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+              onPressed: () => Navigator.of(context). pop(),
               child: Text('OK'),
             ),
           ],
@@ -256,6 +285,30 @@ void _showLoginDialog() {
   );
 }
 
+void _logout() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.remove('accessToken');
+  setState(() {
+    _accessToken = '';
+    _isLoggedIn = false;
+  });
+  // Show logout success message
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text("Logout Successful"),
+        content: Text("You have been logged out."),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),  // Close the dialog
+            child: Text('OK'),
+          ),
+        ],
+      );
+    },
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -264,16 +317,26 @@ void _showLoginDialog() {
         title: Text('TODO List'),
         leading: PopupMenuButton<String>(
           onSelected: _showMenuSelection,
-          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-            const PopupMenuItem<String>(
-              value: 'Register',
-              child: Text('Register'),
-            ),
-            const PopupMenuItem<String>(
-              value: 'Login',
-              child: Text('Login'),
-            ),
-          ],
+          itemBuilder: (BuildContext context) {
+            print("Is Logged In: $_isLoggedIn");  // Debug print
+            return _isLoggedIn
+                ? <PopupMenuEntry<String>>[
+                    const PopupMenuItem<String>(
+                      value: 'Logout',
+                      child: Text('Logout'),
+                    ),
+                  ]
+                : <PopupMenuEntry<String>>[
+                    const PopupMenuItem<String>(
+                      value: 'Register',
+                      child: Text('Register'),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'Login',
+                      child: Text('Login'),
+                    ),
+                  ];
+          },
           icon: Icon(Icons.person),
         ),
       ),
