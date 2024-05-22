@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'login.dart';
 
 void main() => runApp(MyApp());
@@ -233,27 +231,42 @@ class _TodoScreenState extends State<TodoScreen> {
         itemCount: _tasks.length,
         itemBuilder: (context, index) {
           final task = _tasks[index];
-          return ListTile(
-            leading: Text('${index + 1}'), // Display the item number
-            title: Text(task.title),
-            subtitle: Text(task.description),
-            trailing: IconButton(
-              icon: Icon(
-                task.isDone ? Icons.check_box : Icons.check_box_outline_blank,
+          return Dismissible(
+            key: Key(task.id.toString()),
+            direction: DismissDirection.endToStart,
+            onDismissed: (direction) {
+              _removeTask(task.id);
+            },
+            background: Container(
+              color: Colors.red,
+              alignment: Alignment.centerRight,
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Icon(
+                Icons.delete,
+                color: Colors.white,
               ),
-              onPressed: () => _toggleDone(task.id),
             ),
-            onLongPress: () => _removeTask(task.id),
+            child: ListTile(
+              leading: Text('${index + 1}'), // Display the item number
+              title: Text(task.title),
+              subtitle: Text(task.description),
+              trailing: IconButton(
+                icon: Icon(
+                  task.isDone ? Icons.check_box : Icons.check_box_outline_blank,
+                ),
+                onPressed: () => _toggleDone(task.id),
+              ),
+            ),
           );
         },
       ),
       floatingActionButton: _isLoggedIn
           ? FloatingActionButton(
-            onPressed: () {
-              _showAddTaskDialog(context); 
-            },
-            child: Icon(Icons.add),
-          )
+              onPressed: () {
+                _showAddTaskDialog(context);
+              },
+              child: Icon(Icons.add),
+            )
           : null,
     );
   }
@@ -268,11 +281,11 @@ class Task {
   Task({required this.id, required this.title, required this.description, this.isDone = false});
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'description': description,
-    'is_done': isDone,
-  };
+        'id': id,
+        'title': title,
+        'description': description,
+        'is_done': isDone,
+      };
 
   factory Task.fromJson(Map<String, dynamic> json) {
     return Task(
