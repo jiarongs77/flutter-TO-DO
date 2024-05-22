@@ -54,7 +54,6 @@ class _TodoScreenState extends State<TodoScreen> {
 
   void _addTask(String title, String description) async {
     if (title.isNotEmpty && description.isNotEmpty) {
-      debugPrint("stating add items!");
       var response = await http.post(
         Uri.parse('http://127.0.0.1:8000/api/v1/items/'),
         headers: <String, String>{
@@ -67,7 +66,6 @@ class _TodoScreenState extends State<TodoScreen> {
           'is_done': false,
         }),
       );
-      debugPrint("response!!!!!!$response");
       if (response.statusCode == 200 || response.statusCode == 201) {
         var responseBody = jsonDecode(response.body);
         setState(() {
@@ -81,7 +79,6 @@ class _TodoScreenState extends State<TodoScreen> {
 
   void _toggleDone(int id) async {
     var task = _tasks.firstWhere((t) => t.id == id);
-    debugPrint("tasks${task.isDone}, ${task.id}");
     var response = await http.put(
       Uri.parse('http://127.0.0.1:8000/api/v1/items/$id'),
       headers: <String, String>{
@@ -94,7 +91,6 @@ class _TodoScreenState extends State<TodoScreen> {
         'is_done': !task.isDone,
       }),
     );
-    debugPrint("response button${response.statusCode}");
     if (response.statusCode == 200) {
       setState(() {
         task.isDone = !task.isDone;
@@ -121,7 +117,6 @@ class _TodoScreenState extends State<TodoScreen> {
   }
 
   void _handleLoginSuccess() {
-    debugPrint("login success!");
     _restoreLoginStatus().then((_) {
       setState(() {
         _fetchItems();
@@ -130,7 +125,6 @@ class _TodoScreenState extends State<TodoScreen> {
   }
 
   void _handleLogoutSuccess() {
-    debugPrint("logout success!");
     _isLoggedIn = false;
     _tasks.clear();
     setState(() {});
@@ -158,8 +152,6 @@ class _TodoScreenState extends State<TodoScreen> {
 
   Future<void> _fetchItems() async {
     try {
-      debugPrint("start!!");
-      debugPrint("print token:$_accessToken");
       final response = await http.get(
         Uri.parse('http://127.0.0.1:8000/api/v1/items/?skip=0&limit=100'),
         headers: {
@@ -168,13 +160,11 @@ class _TodoScreenState extends State<TodoScreen> {
         },
       );
 
-      debugPrint("response fetch!!!!!!$response");
       if (response.statusCode == 200) {
         List<dynamic> items = jsonDecode(response.body);
         setState(() {
           _tasks.clear();
           for (var item in items) {
-            debugPrint("response items!!!!!!$item");
             _tasks.add(Task(id: item['id'], title: item['title'], description: item['description'], isDone: item['is_done']));
           }
         });
