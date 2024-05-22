@@ -4,6 +4,8 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'login.dart';
+
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
@@ -31,7 +33,11 @@ class _TodoScreenState extends State<TodoScreen> {
   @override
   void initState() {
     super.initState();
-    _restoreLoginStatus();
+    _restoreLoginStatus().then((_) {
+      if (_isLoggedIn) {
+        _fetchItems();
+      }
+    });
   }
 
   Future<void> _restoreLoginStatus() async {
@@ -42,273 +48,167 @@ class _TodoScreenState extends State<TodoScreen> {
         _accessToken = accessToken;
         _isLoggedIn = true;
       });
+      _fetchItems();
     }
   }
 
-  void _addTask(String title) async {
-    if (title.isNotEmpty) {
+  void _addTask(String title, String description) async {
+    if (title.isNotEmpty && description.isNotEmpty) {
+      debugPrint("stating add items!");
       var response = await http.post(
-        Uri.parse('http://localhost:8000/items/'),
+        Uri.parse('http://127.0.0.1:8000/api/v1/items/'),
         headers: <String, String>{
           'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_accessToken',
         },
         body: jsonEncode(<String, dynamic>{
           'title': title,
+          'description': description,
           'is_done': false,
         }),
       );
-      if (response.statusCode == 200) {
+      debugPrint("response!!!!!!$response");
+      if (response.statusCode == 200 || response.statusCode == 201) {
         var responseBody = jsonDecode(response.body);
         setState(() {
-          _tasks.add(Task(id: responseBody['item_id'], title: title));
+          _tasks.add(Task(id: responseBody['id'], title: title, description: description));
         });
+      } else {
+        print('Failed to create item: ${response.body}');
       }
     }
   }
 
   void _toggleDone(int id) async {
     var task = _tasks.firstWhere((t) => t.id == id);
+    debugPrint("tasks${task.isDone}, ${task.id}");
     var response = await http.put(
-      Uri.parse('http://localhost:8000/items/$id'),
+      Uri.parse('http://127.0.0.1:8000/api/v1/items/$id'),
       headers: <String, String>{
         'Content-Type': 'application/json',
+        'Authorization': 'Bearer $_accessToken',
       },
       body: jsonEncode(<String, dynamic>{
         'title': task.title,
+        'description': task.description,
         'is_done': !task.isDone,
       }),
     );
+    debugPrint("response button${response.statusCode}");
     if (response.statusCode == 200) {
       setState(() {
         task.isDone = !task.isDone;
       });
+    } else {
+      print('Failed to update item: ${response.body}');
     }
   }
 
   void _removeTask(int id) async {
-    var response = await http.delete(Uri.parse('http://localhost:8000/items/$id'));
+    var response = await http.delete(
+      Uri.parse('http://127.0.0.1:8000/api/v1/items/$id'),
+      headers: {
+        'Authorization': 'Bearer $_accessToken',
+      },
+    );
     if (response.statusCode == 200) {
       setState(() {
         _tasks.removeWhere((t) => t.id == id);
       });
-    }
-  }
-
-void _showMenuSelection(String value) {
-  switch (value) {
-    case 'Register':
-      if (!_isLoggedIn) {
-        _showRegisterDialog();
-      }
-      break;
-    case 'Login':
-      if (!_isLoggedIn) {
-        _showLoginDialog();
-      }
-      break;
-    case 'Logout':
-      _logout();
-      break;
-    default:
-      print('Unknown option: $value');
-  }
-}
-
-  Future<void> _registerUser(String email, String password, String fullName) async {
-    var url = Uri.parse('http://127.0.0.1:8000/api/v1/users/register');
-    var response = await http.post(
-      url,
-      headers: <String, String>{
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: jsonEncode(<String, String>{
-        'email': email,
-        'password': password,
-        'full_name': fullName,
-      }),
-    );
-    if (response.statusCode == 200) {
-      print('User registered successfully');
-      // Optionally navigate or provide feedback
     } else {
-      print('Failed to register user: ${response.body}');
-      // Optionally handle errors or provide feedback
+      print('Failed to delete item: ${response.body}');
     }
   }
 
-Future<void> _loginUser(String email, String password) async {
-  var url = Uri.parse('http://127.0.0.1:8000/api/v1/login/access-token');
-  var response = await http.post(
-    url,
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: 'username=${Uri.encodeComponent(email)}&password=${Uri.encodeComponent(password)}&grant_type=password'
-  );
+  void _handleLoginSuccess() {
+    debugPrint("login success!");
+    _restoreLoginStatus().then((_) {
+      setState(() {
+        _fetchItems();
+      });
+    });
+  }
 
-  if (response.statusCode == 200) {
-    var responseBody = jsonDecode(response.body);
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('accessToken', responseBody['access_token']);
-    setState(() {
-      _accessToken = responseBody['access_token'];
-      _isLoggedIn = true;
-    });
-    showDialog(
+  void _handleLogoutSuccess() {
+    debugPrint("logout success!");
+    _isLoggedIn = false;
+    _tasks.clear();
+    setState(() {});
+  }
+
+  void _showMenuSelection(String value) {
+    switch (value) {
+      case 'Register':
+        if (!_isLoggedIn) {
+          showRegisterDialog(context);
+        }
+        break;
+      case 'Login':
+        if (!_isLoggedIn) {
+          showLoginDialog(context, _handleLoginSuccess);
+        }
+        break;
+      case 'Logout':
+        logout(context, _handleLogoutSuccess);
+        break;
+      default:
+        print('Unknown option: $value');
+    }
+  }
+
+  Future<void> _fetchItems() async {
+    try {
+      debugPrint("start!!");
+      debugPrint("print token:$_accessToken");
+      final response = await http.get(
+        Uri.parse('http://127.0.0.1:8000/api/v1/items/?skip=0&limit=100'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_accessToken',
+        },
+      );
+
+      debugPrint("response fetch!!!!!!$response");
+      if (response.statusCode == 200) {
+        List<dynamic> items = jsonDecode(response.body);
+        setState(() {
+          _tasks.clear();
+          for (var item in items) {
+            debugPrint("response items!!!!!!$item");
+            _tasks.add(Task(id: item['id'], title: item['title'], description: item['description'], isDone: item['is_done']));
+          }
+        });
+      } else {
+        print('Failed to fetch items: ${response.body}');
+      }
+    } catch (e) {
+      print('Error fetching items: $e');
+    }
+  }
+
+  void _showAddTaskDialog(BuildContext context) {
+    final titleController = TextEditingController();
+    final descriptionController = TextEditingController();
+
+    showDialogGeneric(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text("Login Successful"),
-          content: Text("Welcome back!"),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('OK'),
-            ),
-          ],
-        );
-    });
-  } else {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text("Login Failed"),
-          content: Text("Incorrect email or password."),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(context). pop(),
-              child: Text('OK'),
-            ),
-          ],
-        );
-      },
+      title: 'Add Task',
+      fields: [
+        TextField(
+          controller: titleController,
+          decoration: InputDecoration(labelText: 'Title'),
+        ),
+        TextField(
+          controller: descriptionController,
+          decoration: InputDecoration(labelText: 'Description'),
+        ),
+      ],
+      onConfirm: () => _addTask(
+        titleController.text,
+        descriptionController.text,
+      ),
     );
   }
-}
-
-void _showDialog({
-  required String title,
-  required List<TextField> fields,
-  required VoidCallback onConfirm,
-}) {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        titlePadding: EdgeInsets.all(0),
-        title: AppBar(
-          backgroundColor: Theme.of(context).dialogBackgroundColor,
-          automaticallyImplyLeading: false,
-          title: Text(title),
-          actions: <Widget>[
-            IconButton(
-              icon: Icon(Icons.close, color: Colors.black),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ],
-          elevation: 0,
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: fields,
-          ),
-        ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () {
-              onConfirm();
-              Navigator.of(context).pop();
-            },
-            child: Text(title),
-          ),
-        ],
-      );
-    },
-  );
-}
-
-void _showRegisterDialog() {
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
-  final fullNameController = TextEditingController();
-
-  _showDialog(
-    title: 'Register',
-    fields: [
-      TextField(
-        controller: emailController,
-        decoration: InputDecoration(labelText: 'Email'),
-      ),
-      TextField(
-        controller: passwordController,
-        decoration: InputDecoration(labelText: 'Password'),
-        obscureText: true,
-      ),
-      TextField(
-        controller: fullNameController,
-        decoration: InputDecoration(labelText: 'Full Name'),
-      ),
-    ],
-    onConfirm: () => _registerUser(
-      emailController.text,
-      passwordController.text,
-      fullNameController.text,
-    ),
-  );
-}
-
-void _showLoginDialog() {
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
-
-  _showDialog(
-    title: 'Login',
-    fields: [
-      TextField(
-        controller: emailController,
-        decoration: InputDecoration(labelText: 'Email'),
-        keyboardType: TextInputType.emailAddress,
-      ),
-      TextField(
-        controller: passwordController,
-        decoration: InputDecoration(labelText: 'Password'),
-        obscureText: true,
-      ),
-    ],
-    onConfirm: () => _loginUser(
-      emailController.text,
-      passwordController.text,
-    ),
-  );
-}
-
-void _logout() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.remove('accessToken');
-  setState(() {
-    _accessToken = '';
-    _isLoggedIn = false;
-  });
-  // Show logout success message
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text("Logout Successful"),
-        content: Text("You have been logged out."),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),  // Close the dialog
-            child: Text('OK'),
-          ),
-        ],
-      );
-    },
-  );
-}
 
   @override
   Widget build(BuildContext context) {
@@ -318,7 +218,6 @@ void _logout() async {
         leading: PopupMenuButton<String>(
           onSelected: _showMenuSelection,
           itemBuilder: (BuildContext context) {
-            print("Is Logged In: $_isLoggedIn");  // Debug print
             return _isLoggedIn
                 ? <PopupMenuEntry<String>>[
                     const PopupMenuItem<String>(
@@ -340,9 +239,32 @@ void _logout() async {
           icon: Icon(Icons.person),
         ),
       ),
-      body: Column(
-        // Existing body widgets
+      body: ListView.builder(
+        itemCount: _tasks.length,
+        itemBuilder: (context, index) {
+          final task = _tasks[index];
+          return ListTile(
+            leading: Text('${index + 1}'), // Display the item number
+            title: Text(task.title),
+            subtitle: Text(task.description),
+            trailing: IconButton(
+              icon: Icon(
+                task.isDone ? Icons.check_box : Icons.check_box_outline_blank,
+              ),
+              onPressed: () => _toggleDone(task.id),
+            ),
+            onLongPress: () => _removeTask(task.id),
+          );
+        },
       ),
+      floatingActionButton: _isLoggedIn
+          ? FloatingActionButton(
+            onPressed: () {
+              _showAddTaskDialog(context); 
+            },
+            child: Icon(Icons.add),
+          )
+          : null,
     );
   }
 }
@@ -350,7 +272,24 @@ void _logout() async {
 class Task {
   int id;
   String title;
+  String description;
   bool isDone;
 
-  Task({required this.id, required this.title, this.isDone = false});
+  Task({required this.id, required this.title, required this.description, this.isDone = false});
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'description': description,
+    'is_done': isDone,
+  };
+
+  factory Task.fromJson(Map<String, dynamic> json) {
+    return Task(
+      id: json['id'],
+      title: json['title'],
+      description: json['description'],
+      isDone: json['is_done'],
+    );
+  }
 }
