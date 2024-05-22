@@ -114,6 +114,57 @@ class _TodoScreenState extends State<TodoScreen> {
     }
   }
 
+  void _updateTask(int id, String title, String description, bool isDone) async {
+    var response = await http.put(
+      Uri.parse('http://127.0.0.1:8000/api/v1/items/$id'),
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $_accessToken',
+      },
+      body: jsonEncode(<String, dynamic>{
+        'title': title,
+        'description': description,
+        'is_done': isDone,
+      }),
+    );
+    if (response.statusCode == 200) {
+      setState(() {
+        var task = _tasks.firstWhere((t) => t.id == id);
+        task.title = title;
+        task.description = description;
+        task.isDone = isDone;
+      });
+    } else {
+      print('Failed to update item: ${response.body}');
+    }
+  }
+
+  void _showEditTaskDialog(BuildContext context, Task task) {
+    final titleController = TextEditingController(text: task.title);
+    final descriptionController = TextEditingController(text: task.description);
+
+    showDialogGeneric(
+      context: context,
+      title: 'Edit Task',
+      fields: [
+        TextField(
+          controller: titleController,
+          decoration: InputDecoration(labelText: 'Title'),
+        ),
+        TextField(
+          controller: descriptionController,
+          decoration: InputDecoration(labelText: 'Description'),
+        ),
+      ],
+      onConfirm: () => _updateTask(
+        task.id,
+        titleController.text,
+        descriptionController.text,
+        task.isDone,
+      ),
+    );
+  }
+
   void _handleLoginSuccess() {
     _restoreLoginStatus().then((_) {
       setState(() {
@@ -250,11 +301,21 @@ class _TodoScreenState extends State<TodoScreen> {
               leading: Text('${index + 1}'), // Display the item number
               title: Text(task.title),
               subtitle: Text(task.description),
-              trailing: IconButton(
-                icon: Icon(
-                  task.isDone ? Icons.check_box : Icons.check_box_outline_blank,
-                ),
-                onPressed: () => _toggleDone(task.id),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.edit),
+                    iconSize: 18, // Smaller icon size
+                    onPressed: () => _showEditTaskDialog(context, task),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      task.isDone ? Icons.check_box : Icons.check_box_outline_blank,
+                    ),
+                    onPressed: () => _toggleDone(task.id),
+                  ),
+                ],
               ),
             ),
           );
