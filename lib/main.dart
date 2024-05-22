@@ -67,7 +67,12 @@ class _TodoScreenState extends State<TodoScreen> {
       if (response.statusCode == 200 || response.statusCode == 201) {
         var responseBody = jsonDecode(response.body);
         setState(() {
-          _tasks.add(Task(id: responseBody['id'], title: title, description: description));
+          _tasks.add(Task(
+              id: responseBody['id'],
+              title: title,
+              description: description,
+              isDone: false));
+          _sortTasks();
         });
       } else {
         print('Failed to create item: ${response.body}');
@@ -92,6 +97,7 @@ class _TodoScreenState extends State<TodoScreen> {
     if (response.statusCode == 200) {
       setState(() {
         task.isDone = !task.isDone;
+        _sortTasks();
       });
     } else {
       print('Failed to update item: ${response.body}');
@@ -133,6 +139,7 @@ class _TodoScreenState extends State<TodoScreen> {
         task.title = title;
         task.description = description;
         task.isDone = isDone;
+        _sortTasks();
       });
     } else {
       print('Failed to update item: ${response.body}');
@@ -214,8 +221,13 @@ class _TodoScreenState extends State<TodoScreen> {
         setState(() {
           _tasks.clear();
           for (var item in items) {
-            _tasks.add(Task(id: item['id'], title: item['title'], description: item['description'], isDone: item['is_done']));
+            _tasks.add(Task(
+                id: item['id'],
+                title: item['title'],
+                description: item['description'],
+                isDone: item['is_done']));
           }
+          _sortTasks();
         });
       } else {
         print('Failed to fetch items: ${response.body}');
@@ -223,6 +235,16 @@ class _TodoScreenState extends State<TodoScreen> {
     } catch (e) {
       print('Error fetching items: $e');
     }
+  }
+
+  void _sortTasks() {
+    setState(() {
+      _tasks.sort((a, b) {
+        if (a.isDone && !b.isDone) return 1;
+        if (!a.isDone && b.isDone) return -1;
+        return b.id.compareTo(a.id); // Assuming higher IDs are newer tasks
+      });
+    });
   }
 
   void _showAddTaskDialog(BuildContext context) {
