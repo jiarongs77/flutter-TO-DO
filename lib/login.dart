@@ -6,13 +6,12 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-
-
 void showDialogGeneric({
   required BuildContext context,
   required String title,
-  required List<TextField> fields,
-  required VoidCallback onConfirm,
+  required List<Widget> fields,
+  required VoidCallback onConfirm, 
+  String? errorMessage,
 }) {
   showDialog(
     context: context,
@@ -29,12 +28,12 @@ void showDialogGeneric({
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   Padding(
-                    padding: const EdgeInsets.only(right: 24.0), // Add padding to prevent overlap
+                    padding: const EdgeInsets.only(right: 24.0),
                     child: Center(
                       child: Text(
                         title,
                         textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.headline6?.copyWith(fontSize: 18), // Adjust font size here
+                        style: Theme.of(context).textTheme.headline6?.copyWith(fontSize: 18),
                       ),
                     ),
                   ),
@@ -54,10 +53,7 @@ void showDialogGeneric({
         ),
         actions: <Widget>[
           TextButton(
-            onPressed: () {
-              onConfirm();
-              Navigator.of(context).pop();
-            },
+            onPressed: onConfirm,
             child: Text('Confirm'),
           ),
         ],
@@ -71,17 +67,65 @@ void showRegisterDialog(BuildContext context) {
   final passwordController = TextEditingController();
   final fullNameController = TextEditingController();
 
+  void onConfirm() {
+    String email = emailController.text;
+    String password = passwordController.text;
+    String fullName = fullNameController.text;
+
+    if (!_isValidEmail(email)) {
+      _showErrorMessage(context, 'Email or password invalid');
+      return;
+    } else if (password.length < 4 || password.length > 10) {
+      _showErrorMessage(context, 'Email or password invalid');
+      return;
+    } else {
+      registerUser(email, password, fullName).then((result) {
+        if (result == 'success') {
+          Navigator.of(context).pop();
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(20.0)),
+                ),
+                title: Text("Register Successful"),
+                content: Text("User registered successfully"),
+                actions: <Widget>[
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text('OK'),
+                  ),
+                ],
+              );
+            },
+          );
+        } else {
+          _showErrorMessage(context, 'The email address already exists');
+        } 
+      });
+    }
+  }
+
   showDialogGeneric(
     context: context,
     title: 'Register',
     fields: [
       TextField(
         controller: emailController,
-        decoration: InputDecoration(labelText: 'Email'),
+        decoration: InputDecoration(
+          labelText: 'Email',
+          hintText: 'Enter a valid email address',
+          hintStyle: TextStyle(color: Colors.grey),
+        ),
       ),
       TextField(
         controller: passwordController,
-        decoration: InputDecoration(labelText: 'Password'),
+        decoration: InputDecoration(
+          labelText: 'Password',
+          hintText: '4-10 characters',
+          hintStyle: TextStyle(color: Colors.grey),
+        ),
         obscureText: true,
       ),
       TextField(
@@ -89,17 +133,71 @@ void showRegisterDialog(BuildContext context) {
         decoration: InputDecoration(labelText: 'Full Name'),
       ),
     ],
-    onConfirm: () => registerUser(
-      emailController.text,
-      passwordController.text,
-      fullNameController.text,
-    ),
+    onConfirm: onConfirm,
   );
+}
+
+void _showErrorMessage(BuildContext context, String message) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20.0)),
+        ),
+        title: Text("Error"),
+        content: Text(message),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('OK'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+bool _isValidEmail(String email) {
+  final regex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+  return regex.hasMatch(email);
 }
 
 void showLoginDialog(BuildContext context, VoidCallback onLoginSuccess) {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  String? errorMessage;
+
+  void onConfirm() {
+    loginUser(emailController.text, passwordController.text, context, onLoginSuccess)
+        .then((success) {
+      if (success) {
+        Navigator.of(context).pop();
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(20.0)),
+              ),
+              title: Text("Login Successful"),
+              content: Text("Welcome back!"),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text('OK'),
+                ),
+              ],
+            );
+          },
+        );
+      } else {
+        errorMessage = 'Invalid email or password';
+        Navigator.of(context).pop();
+        _showErrorMessage(context, errorMessage!);
+      }
+    });
+  }
 
   showDialogGeneric(
     context: context,
@@ -107,21 +205,25 @@ void showLoginDialog(BuildContext context, VoidCallback onLoginSuccess) {
     fields: [
       TextField(
         controller: emailController,
-        decoration: InputDecoration(labelText: 'Email'),
+        decoration: InputDecoration(
+          labelText: 'Email',
+          hintText: 'Please enter your email address',
+          hintStyle: TextStyle(color: Colors.grey),
+        ),
         keyboardType: TextInputType.emailAddress,
       ),
       TextField(
         controller: passwordController,
-        decoration: InputDecoration(labelText: 'Password'),
+        decoration: InputDecoration(
+          labelText: 'Password',
+          hintText: 'Please enter your password',
+          hintStyle: TextStyle(color: Colors.grey),
+        ),
         obscureText: true,
       ),
     ],
-    onConfirm: () => loginUser(
-      emailController.text,
-      passwordController.text,
-      context,
-      onLoginSuccess,
-    ),
+    onConfirm: onConfirm,
+    errorMessage: errorMessage,
   );
 }
 
@@ -149,14 +251,14 @@ void logout(BuildContext context, VoidCallback onLogoutSuccess) async {
   );
 }
 
-Future<void> loginUser(String email, String password, BuildContext context, VoidCallback onLoginSuccess) async {
+Future<bool> loginUser(String email, String password, BuildContext context, VoidCallback onLoginSuccess) async {
   var url = Uri.parse('http://127.0.0.1:8000/api/v1/login/access-token');
   var response = await http.post(
     url,
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
-    body: 'username=${Uri.encodeComponent(email)}&password=${Uri.encodeComponent(password)}&grant_type=password'
+    body: 'username=${Uri.encodeComponent(email)}&password=${Uri.encodeComponent(password)}&grant_type=password',
   );
 
   if (response.statusCode == 200) {
@@ -164,47 +266,13 @@ Future<void> loginUser(String email, String password, BuildContext context, Void
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('accessToken', responseBody['access_token']);
     onLoginSuccess();
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(20.0)),
-          ),
-          title: Text("Login Successful"),
-          content: Text("Welcome back!"),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('OK'),
-            ),
-          ],
-        );
-      }
-    );
+    return true;
   } else {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(20.0)),
-          ),
-          title: Text("Login Failed"),
-          content: Text("Incorrect email or password."),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('OK'),
-            ),
-          ],
-        );
-      },
-    );
+    return false;
   }
 }
 
-Future<void> registerUser(String email, String password, String fullName) async {
+Future<String> registerUser(String email, String password, String fullName) async {
   var url = Uri.parse('http://127.0.0.1:8000/api/v1/users/register');
   var response = await http.post(
     url,
@@ -220,9 +288,12 @@ Future<void> registerUser(String email, String password, String fullName) async 
   );
   if (response.statusCode == 200) {
     print('User registered successfully');
-    // Optionally navigate or provide feedback
+    return 'success';
+  } else if (response.statusCode == 409) {
+    print('Email already exists');
+    return 'exists';
   } else {
     print('Failed to register user: ${response.body}');
-    // Optionally handle errors or provide feedback
+    return 'error';
   }
 }
