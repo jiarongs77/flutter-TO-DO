@@ -21,9 +21,9 @@ class _TodoScreenState extends State<TodoScreen> {
   @override
   void initState() {
     super.initState();
-    _restoreLoginStatus().then((_) {
-      if (_isLoggedIn) {
-        _fetchItems();
+    Utils.checkLoginStatus().then((loggedIn) {
+      if (loggedIn) {
+        _restoreLoginStatus();
       } else {
         Navigator.pushReplacement(
           context,
@@ -254,11 +254,11 @@ class _TodoScreenState extends State<TodoScreen> {
       appBar: AppBar(
         title: Text('TODO List'),
         leading: SizedBox(
-          width: 100, 
+          width: 100, // Adjust the width as needed
           child: TextButton(
             style: TextButton.styleFrom(
               padding: EdgeInsets.symmetric(horizontal: 1), // Adjust padding as needed
-              minimumSize: Size(100, 50), // Adjust minimum size as needed
+              minimumSize: Size(150, 50), // Adjust minimum size as needed
             ),
             onPressed: () => logout(context, _handleLogoutSuccess),
             child: Text(

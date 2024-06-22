@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Utils {
+  static Future<bool> checkLoginStatus() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? accessToken = prefs.getString('accessToken');
+    return accessToken != null;
+  }
+
   static void showErrorMessage(BuildContext context, String message) {
     showDialog(
       context: context,
@@ -31,7 +38,7 @@ class Utils {
     required BuildContext context,
     required String title,
     required List<Widget> fields,
-    required VoidCallback onConfirm, 
+    required VoidCallback onConfirm,
     String? errorMessage,
   }) {
     showDialog(
@@ -74,7 +81,10 @@ class Utils {
           ),
           actions: <Widget>[
             TextButton(
-              onPressed: onConfirm,
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+                onConfirm();
+              },
               child: Text('Confirm'),
             ),
           ],

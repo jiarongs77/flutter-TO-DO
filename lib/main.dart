@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'utils.dart';
 import 'welcome.dart';
 import 'todo_screen.dart';
 
@@ -12,7 +10,18 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'TODO App',
-      home: WelcomePage(),
+      home: FutureBuilder(
+        future: Utils.checkLoginStatus(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator()); // Show loading indicator while checking login status
+          } else if (snapshot.data == true) {
+            return TodoScreen(); // Navigate to TODO Screen if logged in
+          } else {
+            return WelcomePage(); // Navigate to Welcome Page if not logged in
+          }
+        },
+      ),
     );
   }
 }
