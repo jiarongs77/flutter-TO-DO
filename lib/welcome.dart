@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'login_page.dart';
 import 'register_page.dart';
-import 'user_management.dart';
 import 'todo_screen.dart';
 
 class WelcomePage extends StatelessWidget {
@@ -16,14 +15,14 @@ class WelcomePage extends StatelessWidget {
               style: TextStyle(
                 fontSize: 24.0,
                 fontWeight: FontWeight.bold,
-                color: Colors.deepPurpleAccent, 
+                color: Colors.deepPurple, 
               ),
             ),
             Text(
               'Your everyday to-do list manager',
               style: TextStyle(
                 fontSize: 16.0,
-                color: Colors.deepPurpleAccent, 
+                color: Colors.deepPurple, 
               ),
             ),
           ],

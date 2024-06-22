@@ -3,8 +3,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'user_management.dart';
 import 'welcome.dart';
+import 'utils.dart';
 
 class TodoScreen extends StatefulWidget {
   @override
@@ -145,7 +145,7 @@ class _TodoScreenState extends State<TodoScreen> {
     final titleController = TextEditingController(text: task.title);
     final descriptionController = TextEditingController(text: task.description);
 
-    showDialogGeneric(
+    Utils.showDialogGeneric(
       context: context,
       title: 'Edit Task',
       fields: [
@@ -167,38 +167,20 @@ class _TodoScreenState extends State<TodoScreen> {
     );
   }
 
-  void _handleLoginSuccess() {
-    _restoreLoginStatus().then((_) {
-      setState(() {
-        _fetchItems();
-      });
-    });
+  void logout(BuildContext context, VoidCallback onLogoutSuccess) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove('accessToken');
+    onLogoutSuccess();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => WelcomePage()),
+    );
   }
 
   void _handleLogoutSuccess() {
     _isLoggedIn = false;
     _tasks.clear();
     setState(() {});
-  }
-
-  void _showMenuSelection(String value) {
-    switch (value) {
-      case 'Register':
-        if (!_isLoggedIn) {
-          showRegisterDialog(context);
-        }
-        break;
-      case 'Login':
-        if (!_isLoggedIn) {
-          showLoginDialog(context, _handleLoginSuccess);
-        }
-        break;
-      case 'Logout':
-        logout(context, _handleLogoutSuccess);
-        break;
-      default:
-        print('Unknown option: $value');
-    }
   }
 
   Future<void> _fetchItems() async {
@@ -246,7 +228,7 @@ class _TodoScreenState extends State<TodoScreen> {
     final titleController = TextEditingController();
     final descriptionController = TextEditingController();
 
-    showDialogGeneric(
+    Utils.showDialogGeneric(
       context: context,
       title: 'Add Task',
       fields: [
@@ -271,28 +253,23 @@ class _TodoScreenState extends State<TodoScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('TODO List'),
-        leading: PopupMenuButton<String>(
-          onSelected: _showMenuSelection,
-          itemBuilder: (BuildContext context) {
-            return _isLoggedIn
-                ? <PopupMenuEntry<String>>[
-                    const PopupMenuItem<String>(
-                      value: 'Logout',
-                      child: Text('Logout'),
-                    ),
-                  ]
-                : <PopupMenuEntry<String>>[
-                    const PopupMenuItem<String>(
-                      value: 'Register',
-                      child: Text('Register'),
-                    ),
-                    const PopupMenuItem<String>(
-                      value: 'Login',
-                      child: Text('Login'),
-                    ),
-                  ];
-          },
-          icon: Icon(Icons.person),
+        leading: SizedBox(
+          width: 100, 
+          child: TextButton(
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.symmetric(horizontal: 1), // Adjust padding as needed
+              minimumSize: Size(100, 50), // Adjust minimum size as needed
+            ),
+            onPressed: () => logout(context, _handleLogoutSuccess),
+            child: Text(
+              'Logout',
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.deepPurple,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
         ),
       ),
       body: ListView.builder(
