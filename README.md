@@ -1,4 +1,4 @@
-# Flutter Project DoneDeal
+# Flutter Project: DoneDeal
 
 DoneDeal is a frontend project for users to manage (creat, add, update, delete etc) their to-do list, using the backend [FastAPI](https://github.com/jiarongs77/fastAPI-CRUD)
 
