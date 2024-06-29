@@ -61,7 +61,7 @@ class Utils {
                         child: Text(
                           title,
                           textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.headline6?.copyWith(fontSize: 18),
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontSize: 18),
                         ),
                       ),
                     ),
