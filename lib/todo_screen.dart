@@ -292,7 +292,10 @@ class _TodoScreenState extends State<TodoScreen> {
               ),
             ),
             child: ListTile(
-              leading: Text('${index + 1}'), // Display the item number
+              leading: Text(
+                '${index + 1}', // Display the item number
+                style: TextStyle(fontSize: 15), 
+              ), 
               title: Text(task.title),
               subtitle: Text(task.description),
               trailing: Row(
