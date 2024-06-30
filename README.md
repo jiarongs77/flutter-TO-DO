@@ -39,6 +39,8 @@ The following features are implemented:
 
 - [JSON and serialization](https://docs.flutter.dev/data-and-backend/serialization/json) : read and parse data model
 
+- [Shared preference](https://docs.flutter.dev/cookbook/persistence/key-value) : store small amounts of data in key-value pairs on a user’s device
+
 
 ## Video Walkthrough
 
