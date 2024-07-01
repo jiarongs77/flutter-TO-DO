@@ -37,6 +37,8 @@ dependencies:
   path: ^1.9.0
 
 dev_dependencies:
+  sqflite_common_ffi: ^2.0.0+1
+  sqflite_common_ffi_web: ^2.0.0+1
   build_runner: ^2.1.4
   flutter_test:
     sdk: flutter

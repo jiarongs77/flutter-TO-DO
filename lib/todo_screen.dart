@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'database_helper.dart'; // Import the database helper
 import 'welcome.dart';
 import 'utils.dart';
 
@@ -14,6 +15,7 @@ class TodoScreen extends StatefulWidget {
 class _TodoScreenState extends State<TodoScreen> {
   final List<Task> _tasks = [];
   final TextEditingController _controller = TextEditingController();
+  final DatabaseHelper _dbHelper = DatabaseHelper();
 
   bool _isLoggedIn = false;
   String _accessToken = '';
@@ -21,7 +23,9 @@ class _TodoScreenState extends State<TodoScreen> {
   @override
   void initState() {
     super.initState();
+    print('Initializing TodoScreen');
     Utils.checkLoginStatus().then((loggedIn) {
+      print('Login status: $loggedIn');
       if (loggedIn) {
         _restoreLoginStatus();
       } else {
@@ -41,104 +45,95 @@ class _TodoScreenState extends State<TodoScreen> {
         _accessToken = accessToken;
         _isLoggedIn = true;
       });
-      _fetchItems();
+      print('Restored access token: $_accessToken');
+      _fetchAndCacheItems();
     }
   }
 
-  void _addTask(String title, String description) async {
-    if (title.isNotEmpty && description.isNotEmpty) {
-      var response = await http.post(
-        Uri.parse('http://127.0.0.1:8000/api/v1/items/'),
-        headers: <String, String>{
+  Future<void> _fetchAndCacheItems() async {
+    if (kIsWeb) {
+      print('Fetch and cache items not supported on web');
+      return;
+    }
+    try {
+      final response = await http.get(
+        Uri.parse('http://127.0.0.1:8000/api/v1/items/?skip=0&limit=100'),
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $_accessToken',
         },
-        body: jsonEncode(<String, dynamic>{
-          'title': title,
-          'description': description,
-          'is_done': false,
-        }),
       );
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        var responseBody = jsonDecode(response.body);
-        setState(() {
-          _tasks.add(Task(
-              id: responseBody['id'],
-              title: title,
-              description: description,
-              isDone: false));
-          _sortTasks();
-        });
+
+      if (response.statusCode == 200) {
+        List<dynamic> items = jsonDecode(response.body);
+        List<Task> tasks = items.map((item) => Task.fromJson(item)).toList();
+        await _dbHelper.insertTasks(tasks); // Save to local SQLite
+        _fetchItemsFromLocal();
       } else {
-        print('Failed to create item: ${response.body}');
+        print('Failed to fetch items from server: ${response.body}');
+        _fetchItemsFromLocal();
       }
+    } catch (e) {
+      print('Error fetching items from server: $e');
+      _fetchItemsFromLocal();
     }
   }
 
-  void _toggleDone(int id) async {
+  Future<void> _fetchItemsFromLocal() async {
+    print('Fetching items from local database');
+    List<Task> tasks = await _dbHelper.fetchTasks();
+    setState(() {
+      _tasks.clear();
+      _tasks.addAll(tasks);
+      _sortTasks();
+    });
+    print('Fetched tasks: $_tasks');
+  }
+
+  Future<void> _addTask(String title, String description) async {
+    if (title.isNotEmpty && description.isNotEmpty) {
+      if (kIsWeb) {
+        print('Add task not supported on web');
+        return;
+      }
+      Task newTask = Task(id: 0, title: title, description: description, isDone: false);
+      print('Adding task: $newTask');
+      await _dbHelper.insertTask(newTask);
+      _fetchItemsFromLocal(); // Refresh the list after adding
+    }
+  }
+
+  Future<void> _toggleDone(int id) async {
+    if (kIsWeb) {
+      print('Toggle task done status not supported on web');
+      return;
+    }
     var task = _tasks.firstWhere((t) => t.id == id);
-    var response = await http.put(
-      Uri.parse('http://127.0.0.1:8000/api/v1/items/$id'),
-      headers: <String, String>{
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $_accessToken',
-      },
-      body: jsonEncode(<String, dynamic>{
-        'title': task.title,
-        'description': task.description,
-        'is_done': !task.isDone,
-      }),
-    );
-    if (response.statusCode == 200) {
-      setState(() {
-        task.isDone = !task.isDone;
-        _sortTasks();
-      });
-    } else {
-      print('Failed to update item: ${response.body}');
-    }
+    task.isDone = !task.isDone;
+    print('Toggling task done status: $task');
+    await _dbHelper.updateTask(task);
+    _fetchItemsFromLocal(); // Refresh the list after updating
   }
 
-  void _removeTask(int id) async {
-    var response = await http.delete(
-      Uri.parse('http://127.0.0.1:8000/api/v1/items/$id'),
-      headers: {
-        'Authorization': 'Bearer $_accessToken',
-      },
-    );
-    if (response.statusCode == 200) {
-      setState(() {
-        _tasks.removeWhere((t) => t.id == id);
-      });
-    } else {
-      print('Failed to delete item: ${response.body}');
+  Future<void> _removeTask(int id) async {
+    if (kIsWeb) {
+      print('Remove task not supported on web');
+      return;
     }
+    print('Removing task with id: $id');
+    await _dbHelper.deleteTask(id);
+    _fetchItemsFromLocal(); // Refresh the list after deleting
   }
 
-  void _updateTask(int id, String title, String description, bool isDone) async {
-    var response = await http.put(
-      Uri.parse('http://127.0.0.1:8000/api/v1/items/$id'),
-      headers: <String, String>{
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $_accessToken',
-      },
-      body: jsonEncode(<String, dynamic>{
-        'title': title,
-        'description': description,
-        'is_done': isDone,
-      }),
-    );
-    if (response.statusCode == 200) {
-      setState(() {
-        var task = _tasks.firstWhere((t) => t.id == id);
-        task.title = title;
-        task.description = description;
-        task.isDone = isDone;
-        _sortTasks();
-      });
-    } else {
-      print('Failed to update item: ${response.body}');
+  Future<void> _updateTask(int id, String title, String description, bool isDone) async {
+    if (kIsWeb) {
+      print('Update task not supported on web');
+      return;
     }
+    var task = Task(id: id, title: title, description: description, isDone: isDone);
+    print('Updating task: $task');
+    await _dbHelper.updateTask(task);
+    _fetchItemsFromLocal(); // Refresh the list after updating
   }
 
   void _showEditTaskDialog(BuildContext context, Task task) {
@@ -170,6 +165,7 @@ class _TodoScreenState extends State<TodoScreen> {
   void logout(BuildContext context, VoidCallback onLogoutSuccess) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.remove('accessToken');
+    print('Logged out and removed access token');
     onLogoutSuccess();
     Navigator.pushReplacement(
       context,
@@ -181,37 +177,7 @@ class _TodoScreenState extends State<TodoScreen> {
     _isLoggedIn = false;
     _tasks.clear();
     setState(() {});
-  }
-
-  Future<void> _fetchItems() async {
-    try {
-      final response = await http.get(
-        Uri.parse('http://127.0.0.1:8000/api/v1/items/?skip=0&limit=100'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_accessToken',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        List<dynamic> items = jsonDecode(response.body);
-        setState(() {
-          _tasks.clear();
-          for (var item in items) {
-            _tasks.add(Task(
-                id: item['id'],
-                title: item['title'],
-                description: item['description'],
-                isDone: item['is_done']));
-          }
-          _sortTasks();
-        });
-      } else {
-        print('Failed to fetch items: ${response.body}');
-      }
-    } catch (e) {
-      print('Error fetching items: $e');
-    }
+    print('Handled logout success');
   }
 
   void _sortTasks() {
@@ -222,6 +188,7 @@ class _TodoScreenState extends State<TodoScreen> {
         return b.id.compareTo(a.id); // Assuming higher IDs are newer tasks
       });
     });
+    print('Sorted tasks: $_tasks');
   }
 
   void _showAddTaskDialog(BuildContext context) {
@@ -342,7 +309,7 @@ class Task {
         'id': id,
         'title': title,
         'description': description,
-        'is_done': isDone,
+        'is_done': isDone ? 1 : 0, // SQLite stores booleans as integers (0 and 1)
       };
 
   factory Task.fromJson(Map<String, dynamic> json) {
@@ -350,7 +317,12 @@ class Task {
       id: json['id'],
       title: json['title'],
       description: json['description'],
-      isDone: json['is_done'],
+      isDone: json['is_done'] == 1, // SQLite stores booleans as integers (0 and 1)
     );
+  }
+
+  @override
+  String toString() {
+    return 'Task{id: $id, title: $title, description: $description, isDone: $isDone}';
   }
 }
