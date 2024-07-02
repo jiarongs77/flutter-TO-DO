@@ -20,9 +20,30 @@ class LoginPage extends StatelessWidget {
           .loginUser(email, password)
           .then((success) {
         if (success) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => TodoScreen()),  // Navigate to TodoScreen
+          showDialog(
+            context: context,
+            barrierDismissible: false, // Prevent dialog from being dismissed by user
+            builder: (BuildContext context) {
+              Future.delayed(Duration(milliseconds: 700), () {
+                Navigator.of(context).pop(true); // Close the dialog
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => TodoScreen()),  // Navigate to TodoScreen
+                );
+              });
+              return AlertDialog(
+                content: Container(
+                  height: 100, // Adjust the height as needed
+                  child: Center(
+                    child: Text(
+                      'Welcome Back!',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 19), // Adjust the font size as needed
+                    ),
+                  ),
+                ),
+              );
+            },
           );
         } else {
           Utils.showErrorMessage(context, 'Invalid email or password');
