@@ -39,7 +39,9 @@ The following features are implemented:
 
 - [JSON and serialization](https://docs.flutter.dev/data-and-backend/serialization/json) : read and parse data model
 
-- [Shared preference](https://docs.flutter.dev/cookbook/persistence/key-value) : store small amounts of data in key-value pairs on a user’s device
+- [Shared preference](https://docs.flutter.dev/cookbook/persistence/key-value) : store small amounts of data in key-value pairs, eg. access tokens etc.
+
+- [ChangeNotifier](https://docs.flutter.dev/data-and-backend/state-mgmt/simple#changenotifier) : manage authentication statea (login / logout)
 
 
 ## Video Walkthrough
@@ -51,7 +53,8 @@ Here's a walkthrough of implemented user stories:
 ## Future Milestones
 
 - [BLOC](https://bloclibrary.dev/architecture/) : state management library
+  
+- Use [Firebase](https://firebase.google.com/docs/hosting/quickstart) to deploy web app
 
-- [ChangeNotifier](https://docs.flutter.dev/data-and-backend/state-mgmt/simple#changenotifier) : manage authentication state (login/logout state)
 
 
