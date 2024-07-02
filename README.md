@@ -41,6 +41,8 @@ The following features are implemented:
 
 - [Shared preference](https://docs.flutter.dev/cookbook/persistence/key-value) : store small amounts of data in key-value pairs on a user’s device
 
+- [ChangeNotifier](https://docs.flutter.dev/data-and-backend/state-mgmt/simple#changenotifier) : manage authentication state (login/logout state)
+
 
 ## Video Walkthrough
 
@@ -51,7 +53,8 @@ Here's a walkthrough of implemented user stories:
 ## Future Milestones
 
 - [BLOC](https://bloclibrary.dev/architecture/) : state management library
+  
+- Use [Firebase](https://firebase.google.com/docs/hosting/quickstart) to deploy web app
 
-- [ChangeNotifier](https://docs.flutter.dev/data-and-backend/state-mgmt/simple#changenotifier) : manage authentication state (login/logout state)
 
 
