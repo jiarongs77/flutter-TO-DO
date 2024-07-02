@@ -39,7 +39,7 @@ The following features are implemented:
 
 - [JSON and serialization](https://docs.flutter.dev/data-and-backend/serialization/json) : read and parse data model
 
-- [Shared preference](https://docs.flutter.dev/cookbook/persistence/key-value) : store small amounts of data in key-value pairs on a user’s device
+- [Shared preference](https://docs.flutter.dev/cookbook/persistence/key-value) : store small amounts of data in key-value pairs, eg. access tokens etc.
 
 - [ChangeNotifier](https://docs.flutter.dev/data-and-backend/state-mgmt/simple#changenotifier) : manage authentication state (login/logout state)
 
