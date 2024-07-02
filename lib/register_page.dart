@@ -28,7 +28,7 @@ class RegisterPage extends StatelessWidget {
       return 'success';
     } else if (response.statusCode == 409) {
       print('Email already exists');
-      return 'exists';
+      return 'error';
     } else {
       print('Failed to register user: ${response.body}');
       return 'error';
@@ -51,6 +51,7 @@ class RegisterPage extends StatelessWidget {
         if (result == 'success') {
           showDialog(
             context: context,
+            barrierDismissible: false, // Prevent dialog from being dismissed by user
             builder: (BuildContext context) {
               return AlertDialog(
                 shape: RoundedRectangleBorder(
@@ -62,9 +63,9 @@ class RegisterPage extends StatelessWidget {
                   TextButton(
                     onPressed: () {
                       Navigator.of(context).pop();
-                      Navigator.pushReplacement(
-                        context,
+                      Navigator.of(context).pushAndRemoveUntil(
                         MaterialPageRoute(builder: (context) => WelcomePage()),
+                        (Route<dynamic> route) => false,
                       );
                     },
                     child: Text('OK'),
@@ -73,8 +74,10 @@ class RegisterPage extends StatelessWidget {
               );
             },
           );
-        } else {
+        } else if (result == 'exists') {
           Utils.showErrorMessage(context, 'The email address already exists');
+        } else {
+          Utils.showErrorMessage(context, 'Failed to register user');
         }
       });
     }
@@ -88,6 +91,8 @@ class RegisterPage extends StatelessWidget {
           'Register',
           style: TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.bold),
         ),
+        iconTheme: IconThemeData(color: Colors.deepPurple),
+        backgroundColor: Colors.white,
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -123,9 +128,11 @@ class RegisterPage extends StatelessWidget {
                 SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () => onRegister(context),
-                  child: Text('Register', style: TextStyle(fontSize: 18)),
+                  child: Text('Register', style: TextStyle(fontSize: 18, color: Colors.deepPurple)),
                   style: ElevatedButton.styleFrom(
                     minimumSize: Size(150, 50), // Width and height of the button
+                    backgroundColor: Colors.white, // Button background color
+                    side: BorderSide(color: Colors.deepPurple), // Border color
                   ),
                 ),
               ],
