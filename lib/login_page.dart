@@ -24,7 +24,7 @@ class LoginPage extends StatelessWidget {
             context: context,
             barrierDismissible: false, // Prevent dialog from being dismissed by user
             builder: (BuildContext context) {
-              Future.delayed(Duration(milliseconds: 700), () {
+              Future.delayed(Duration(seconds: 1), () {
                 Navigator.of(context).pop(true); // Close the dialog
                 Navigator.pushReplacement(
                   context,
@@ -38,7 +38,10 @@ class LoginPage extends StatelessWidget {
                     child: Text(
                       'Welcome Back!',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 18), // Adjust the font size as needed
+                      style: TextStyle(
+                        fontSize: 18, // Adjust the font size as needed
+                        color: Colors.deepPurple, // Set the text color to deep purple
+                      ),
                     ),
                   ),
                 ),
@@ -56,7 +59,12 @@ class LoginPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Login'),
+        title: Text(
+          'Login',
+          style: TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.bold),
+        ),
+        iconTheme: IconThemeData(color: Colors.deepPurple),
+        backgroundColor: Colors.white,
       ),
       body: Center(
         child: SingleChildScrollView(

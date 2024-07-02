@@ -221,14 +221,17 @@ class _TodoScreenState extends State<TodoScreen> {
     final authNotifier = Provider.of<AuthNotifier>(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text('TODO List'),
+        title: Text(
+          'To-Do List',
+          style: TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.bold),
+        ),
         leading: IconButton(
           icon: Icon(Icons.logout),
           onPressed: () {
             authNotifier.logoutUser().then((_) {
-              Navigator.pushReplacement(
-                context,
+              Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(builder: (context) => WelcomePage()),
+                (Route<dynamic> route) => false,
               );
             });
           },
