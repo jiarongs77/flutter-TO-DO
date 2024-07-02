@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import 'auth_notifier.dart';
 import 'database_helper.dart';
-import 'welcome.dart';
 import 'utils.dart';
 import 'task.dart';
+import 'welcome.dart';
 
 class TodoScreen extends StatefulWidget {
   @override
@@ -17,43 +18,20 @@ class _TodoScreenState extends State<TodoScreen> {
   final TextEditingController _controller = TextEditingController();
   final DatabaseHelper _dbHelper = DatabaseHelper.databaseHelper;
 
-  bool _isLoggedIn = false;
-  String _accessToken = '';
-
   @override
   void initState() {
     super.initState();
-    Utils.checkLoginStatus().then((loggedIn) {
-      if (loggedIn) {
-        _restoreLoginStatus();
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => WelcomePage()),
-        );
-      }
-    });
-  }
-
-  Future<void> _restoreLoginStatus() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? accessToken = prefs.getString('accessToken');
-    if (accessToken != null) {
-      setState(() {
-        _accessToken = accessToken;
-        _isLoggedIn = true;
-      });
-      _fetchAndCacheItems();
-    }
+    _fetchAndCacheItems();
   }
 
   Future<void> _fetchAndCacheItems() async {
     try {
+      final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
       final response = await http.get(
         Uri.parse('http://127.0.0.1:8000/api/v1/items/?skip=0&limit=100'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_accessToken',
+          'Authorization': 'Bearer ${authNotifier.accessToken}',
         },
       );
 
@@ -84,12 +62,13 @@ class _TodoScreenState extends State<TodoScreen> {
   }
 
   Future<void> _addTask(String title, String description) async {
+    final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
     if (title.isNotEmpty && description.isNotEmpty) {
       var response = await http.post(
         Uri.parse('http://127.0.0.1:8000/api/v1/items/'),
         headers: <String, String>{
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_accessToken',
+          'Authorization': 'Bearer ${authNotifier.accessToken}',
         },
         body: jsonEncode(<String, dynamic>{
           'title': title,
@@ -114,12 +93,13 @@ class _TodoScreenState extends State<TodoScreen> {
   }
 
   Future<void> _toggleDone(int id) async {
+    final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
     var task = _tasks.firstWhere((t) => t.id == id);
     var response = await http.put(
       Uri.parse('http://127.0.0.1:8000/api/v1/items/$id'),
       headers: <String, String>{
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer $_accessToken',
+        'Authorization': 'Bearer ${authNotifier.accessToken}',
       },
       body: jsonEncode(<String, dynamic>{
         'title': task.title,
@@ -137,10 +117,11 @@ class _TodoScreenState extends State<TodoScreen> {
   }
 
   Future<void> _removeTask(int id) async {
+    final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
     var response = await http.delete(
       Uri.parse('http://127.0.0.1:8000/api/v1/items/$id'),
       headers: {
-        'Authorization': 'Bearer $_accessToken',
+        'Authorization': 'Bearer ${authNotifier.accessToken}',
       },
     );
     if (response.statusCode == 200) {
@@ -152,11 +133,12 @@ class _TodoScreenState extends State<TodoScreen> {
   }
 
   Future<void> _updateTask(int id, String title, String description, bool isDone) async {
+    final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
     var response = await http.put(
       Uri.parse('http://127.0.0.1:8000/api/v1/items/$id'),
       headers: <String, String>{
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer $_accessToken',
+        'Authorization': 'Bearer ${authNotifier.accessToken}',
       },
       body: jsonEncode(<String, dynamic>{
         'title': title,
@@ -199,22 +181,6 @@ class _TodoScreenState extends State<TodoScreen> {
     );
   }
 
-  void logout(BuildContext context, VoidCallback onLogoutSuccess) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove('accessToken');
-    onLogoutSuccess();
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => WelcomePage()),
-    );
-  }
-
-  void _handleLogoutSuccess() {
-    _isLoggedIn = false;
-    _tasks.clear();
-    setState(() {});
-  }
-
   void _sortTasks() {
     setState(() {
       _tasks.sort((a, b) {
@@ -252,26 +218,20 @@ class _TodoScreenState extends State<TodoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authNotifier = Provider.of<AuthNotifier>(context);
     return Scaffold(
       appBar: AppBar(
         title: Text('TODO List'),
-        leading: SizedBox(
-          width: 100, // Adjust the width as needed
-          child: TextButton(
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.symmetric(horizontal: 1), // Adjust padding as needed
-              minimumSize: Size(150, 50), // Adjust minimum size as needed
-            ),
-            onPressed: () => logout(context, _handleLogoutSuccess),
-            child: Text(
-              'Logout',
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.deepPurple,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
+        leading: IconButton(
+          icon: Icon(Icons.logout),
+          onPressed: () {
+            authNotifier.logoutUser().then((_) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => WelcomePage()),
+              );
+            });
+          },
         ),
       ),
       body: ListView.builder(
@@ -295,7 +255,7 @@ class _TodoScreenState extends State<TodoScreen> {
             ),
             child: ListTile(
               leading: Text(
-                '${index + 1}', // Display the item number
+                '${index + 1}',
                 style: TextStyle(fontSize: 15),
               ),
               title: Text(task.title),
@@ -305,7 +265,7 @@ class _TodoScreenState extends State<TodoScreen> {
                 children: [
                   IconButton(
                     icon: Icon(Icons.edit),
-                    iconSize: 18, // Smaller icon size
+                    iconSize: 18,
                     onPressed: () => _showEditTaskDialog(context, task),
                   ),
                   IconButton(
@@ -320,7 +280,7 @@ class _TodoScreenState extends State<TodoScreen> {
           );
         },
       ),
-      floatingActionButton: _isLoggedIn
+      floatingActionButton: authNotifier.isAuthenticated
           ? FloatingActionButton(
               onPressed: () {
                 _showAddTaskDialog(context);

@@ -31,6 +31,7 @@ dependencies:
   flutter:
     sdk: flutter
   http: ^1.2.1
+  provider: ^6.0.3  # Add this line
   shared_preferences: ^2.0.6
   cupertino_icons: ^1.0.6
   sqflite: ^2.3.3+1

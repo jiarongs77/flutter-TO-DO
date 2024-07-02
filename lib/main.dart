@@ -3,12 +3,13 @@ import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'utils.dart';
 import 'welcome.dart';
 import 'todo_screen.dart';
 import 'database_helper.dart';
 import 'sqflite_database_helper.dart';
 import 'web_database_helper.dart';
+import 'package:provider/provider.dart';
+import 'auth_notifier.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,23 +24,30 @@ void main() {
     DatabaseHelper.databaseHelper = SqfliteDatabaseHelper();
   }
 
-  runApp(MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => AuthNotifier(),
+      child: MyApp(),
+    ),
+  );
+  print('RunApp called...');
 }
 
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    print('Building MyApp...');
     return MaterialApp(
       title: 'TODO App',
-      home: FutureBuilder(
-        future: Utils.checkLoginStatus(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator()); // Show loading indicator while checking login status
-          } else if (snapshot.data == true) {
-            return TodoScreen(); // Navigate to TODO Screen if logged in
+      home: Consumer<AuthNotifier>(
+        builder: (context, authNotifier, child) {
+          print('Consumer builder called...');
+          if (authNotifier.isLoading) {
+            return Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
           } else {
-            return WelcomePage(); // Navigate to Welcome Page if not logged in
+            return authNotifier.isAuthenticated ? TodoScreen() : WelcomePage();
           }
         },
       ),

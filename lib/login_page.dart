@@ -1,33 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'todo_screen.dart';  // Import the TodoScreen
+import 'package:provider/provider.dart';
+import 'auth_notifier.dart';
 import 'utils.dart';
+import 'todo_screen.dart';  // Import the TodoScreen
 
 class LoginPage extends StatelessWidget {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
-
-  Future<bool> loginUser(String email, String password, BuildContext context) async {
-    var url = Uri.parse('http://127.0.0.1:8000/api/v1/login/access-token');
-    var response = await http.post(
-      url,
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: 'username=${Uri.encodeComponent(email)}&password=${Uri.encodeComponent(password)}&grant_type=password',
-    );
-
-    if (response.statusCode == 200) {
-      var responseBody = jsonDecode(response.body);
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('accessToken', responseBody['access_token']);
-      return true;
-    } else {
-      return false;
-    }
-  }
 
   void onConfirm(BuildContext context) {
     String email = emailController.text;
@@ -37,7 +16,9 @@ class LoginPage extends StatelessWidget {
       Utils.showErrorMessage(context, 'Invalid email or password');
       return;
     } else {
-      loginUser(email, password, context).then((success) {
+      Provider.of<AuthNotifier>(context, listen: false)
+          .loginUser(email, password)
+          .then((success) {
         if (success) {
           Navigator.pushReplacement(
             context,
