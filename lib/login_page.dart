@@ -38,7 +38,7 @@ class LoginPage extends StatelessWidget {
                     child: Text(
                       'Welcome Back!',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 19), // Adjust the font size as needed
+                      style: TextStyle(fontSize: 18), // Adjust the font size as needed
                     ),
                   ),
                 ),
