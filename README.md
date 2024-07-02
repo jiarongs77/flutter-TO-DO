@@ -33,9 +33,13 @@ The following features are implemented:
 
 - [Flutter](https://docs.flutter.dev/) : an open source framework by Google for building  multi-platform applications 
 
-- [Shared Prefence](https://docs.flutter.dev/cookbook/persistence/key-value) : store small amounts of data in key-value pairs on a user's device
-
 - [Postico2](https://eggerapps.at/postico2/) : visualize database tables
+
+- [SQLite](https://docs.flutter.dev/cookbook/persistence/sqlite) : software library to persist data locally
+
+- [JSON and serialization](https://docs.flutter.dev/data-and-backend/serialization/json) : read and parse data model
+
+- [Shared preference](https://docs.flutter.dev/cookbook/persistence/key-value) : store small amounts of data in key-value pairs on a user’s device
 
 
 ## Video Walkthrough
@@ -50,6 +54,4 @@ Here's a walkthrough of implemented user stories:
 
 - [ChangeNotifier](https://docs.flutter.dev/data-and-backend/state-mgmt/simple#changenotifier) : manage authentication state (login/logout state)
 
-- [JSON and serialization](https://docs.flutter.dev/data-and-backend/serialization/json) : read and parse data
 
-- [SQLite](https://docs.flutter.dev/cookbook/persistence/sqlite) : persist data locally
