@@ -14,6 +14,7 @@ class WebDatabaseHelper implements DatabaseHelper {
     final prefs = await SharedPreferences.getInstance();
     final List<String>? taskStrings = prefs.getStringList('tasks');
     if (taskStrings != null) {
+      print('Fetched tasks: $taskStrings');
       return taskStrings.map((taskString) => Task.fromJson(jsonDecode(taskString))).toList();
     } else {
       return [];
@@ -36,7 +37,7 @@ class WebDatabaseHelper implements DatabaseHelper {
     if (index != -1) {
       taskStrings[index] = jsonEncode(task.toJson());
       await prefs.setStringList('tasks', taskStrings);
-      print('Task updated in SharedPreferences: ${task.toJson()}');
+      print('Task updated in SharedPreferences: ${task.toJson()}'); // Debug log
     }
   }
 
