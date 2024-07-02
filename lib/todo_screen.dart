@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'web_database_helper.dart'; 
+import 'database_helper.dart';
 import 'welcome.dart';
 import 'utils.dart';
 import 'task.dart';
@@ -15,7 +15,7 @@ class TodoScreen extends StatefulWidget {
 class _TodoScreenState extends State<TodoScreen> {
   final List<Task> _tasks = [];
   final TextEditingController _controller = TextEditingController();
-  final WebDatabaseHelper _dbHelper = WebDatabaseHelper(); // Updated line
+  final DatabaseHelper _dbHelper = DatabaseHelper.databaseHelper;
 
   bool _isLoggedIn = false;
   String _accessToken = '';
@@ -128,11 +128,9 @@ class _TodoScreenState extends State<TodoScreen> {
       }),
     );
     if (response.statusCode == 200) {
-      setState(() { // Ensure state is updated
-        task.isDone = !task.isDone;
-      });
+      task.isDone = !task.isDone;
       await _dbHelper.updateTask(task);
-      _fetchItemsFromLocal(); // Fetch updated tasks
+      _fetchItemsFromLocal();
     } else {
       print('Failed to update item: ${response.body}');
     }
@@ -205,10 +203,6 @@ class _TodoScreenState extends State<TodoScreen> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.remove('accessToken');
     onLogoutSuccess();
-    
-    // Add a delay before redirecting
-    await Future.delayed(Duration(milliseconds: 400));
-
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => WelcomePage()),
