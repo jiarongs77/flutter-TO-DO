@@ -41,7 +41,7 @@ The following features are implemented:
 
 - [Shared preference](https://docs.flutter.dev/cookbook/persistence/key-value) : store small amounts of data in key-value pairs, eg. access tokens etc.
 
-- [ChangeNotifier](https://docs.flutter.dev/data-and-backend/state-mgmt/simple#changenotifier) : manage authentication statea (login / logout )
+- [ChangeNotifier](https://docs.flutter.dev/data-and-backend/state-mgmt/simple#changenotifier) : manage authentication statea (login / logout)
 
 
 ## Video Walkthrough
