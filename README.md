@@ -35,20 +35,20 @@ The following features are implemented:
 
 - [Postico2](https://eggerapps.at/postico2/) : visualize database tables
 
-- [SQLite](https://docs.flutter.dev/cookbook/persistence/sqlite) : software library to persist data locally
-
 - [JSON and serialization](https://docs.flutter.dev/data-and-backend/serialization/json) : read and parse data model
+
+- [SQLite](https://docs.flutter.dev/cookbook/persistence/sqlite) : software library to persist data locally on mobile / desktop side
 
 - [Shared preference](https://docs.flutter.dev/cookbook/persistence/key-value) : store small amounts of data in key-value pairs, eg. access tokens etc.
 
-- [ChangeNotifier](https://docs.flutter.dev/data-and-backend/state-mgmt/simple#changenotifier) : manage authentication statea (login / logout)
+- [ChangeNotifier](https://docs.flutter.dev/data-and-backend/state-mgmt/simple#changenotifier) : manage authentication states (login / logout)
 
 
 ## Video Walkthrough
 
 Here's a walkthrough of implemented user stories:
 
-[![Watch the video](https://img.youtube.com/vi/mFYySX9nKXY/0.jpg)](https://youtu.be/mFYySX9nKXY)
+[![Watch the video](https://img.youtube.com/vi/SCk-kcBZ2K8/0.jpg)](https://youtu.be/SCk-kcBZ2K8)
 
 ## Future Milestones
 
