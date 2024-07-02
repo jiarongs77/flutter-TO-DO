@@ -48,7 +48,7 @@ The following features are implemented:
 
 Here's a walkthrough of implemented user stories:
 
-[![Watch the video](https://img.youtube.com/vi/mFYySX9nKXY/0.jpg)](https://youtu.be/mFYySX9nKXY)
+[![Watch the video](https://img.youtube.com/vi/8Uc5xyzZ-bE/0.jpg)](https://youtu.be/8Uc5xyzZ-bE)
 
 ## Future Milestones
 
