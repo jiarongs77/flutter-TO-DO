@@ -35,9 +35,9 @@ The following features are implemented:
 
 - [Postico2](https://eggerapps.at/postico2/) : visualize database tables
 
-- [SQLite](https://docs.flutter.dev/cookbook/persistence/sqlite) : software library to persist data locally
-
 - [JSON and serialization](https://docs.flutter.dev/data-and-backend/serialization/json) : read and parse data model
+
+- [SQLite](https://docs.flutter.dev/cookbook/persistence/sqlite) : software library to persist data locally on mobile / desktop side
 
 - [Shared preference](https://docs.flutter.dev/cookbook/persistence/key-value) : store small amounts of data in key-value pairs, eg. access tokens etc.
 
