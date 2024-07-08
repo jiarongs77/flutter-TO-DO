@@ -58,7 +58,7 @@ Here's a walkthrough of implemented user stories:
 
 - [BLOC](https://bloclibrary.dev/architecture/) : state management library
 
-- Architect client more properly 
+- **Architect client more properly** 
   - Basic architecture
     - Feature
       - Authentication
