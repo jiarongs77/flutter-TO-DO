@@ -41,7 +41,11 @@ The following features are implemented:
 
   - [SQLite](https://docs.flutter.dev/cookbook/persistence/sqlite) : software library to persist data locally on mobile / desktop side
 
-  - [Shared preference](https://docs.flutter.dev/cookbook/persistence/key-value) : store small amounts of data in key-value pairs, eg. access tokens etc.
+  - [Shared preference](https://docs.flutter.dev/cookbook/persistence/key-value)
+  
+    - store small amounts of data in key-value pairs, eg. access tokens etc.
+   
+    - web side data storage
 
 - [ChangeNotifier](https://docs.flutter.dev/data-and-backend/state-mgmt/simple#changenotifier) : manage authentication states (login / logout)
 
